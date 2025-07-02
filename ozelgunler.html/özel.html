@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Özel Gün Takipçisi</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+    h1 { text-align: center; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; }
+    ul { list-style-type: none; padding: 0; }
+    li { margin: 10px 0; background: #eee; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Özel Gün Takipçisi</h1>
+    <input type="text" id="title" placeholder="Başlık (örn: Doğum Günü)">
+    <input type="date" id="date">
+    <textarea id="note" placeholder="Açıklama (isteğe bağlı)"></textarea>
+    <button onclick="addEvent()">➕ Ekle</button>
+    <ul id="eventList"></ul>
+  </div>
+
+  <script>
+    const list = document.getElementById("eventList");
+
+    // Bildirim izni iste
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function loadEvents() {
+      const events = JSON.parse(localStorage.getItem("events") || "[]");
+      list.innerHTML = "";
+      events.forEach((event, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${event.title}</strong> - ${event.date}<br>${event.note}
+          <button onclick="removeEvent(${i})">🗑 Sil</button>`;
+        list.appendChild(li);
+      });
+      checkEvents(events);
+    }
+
+    function addEvent() {
+      const title = document.getElementById("title").value;
+      const date = document.getElementById("date").value;
+      const note = document.getElementById("note").value;
+      if (!title || !date) return alert("Başlık ve tarih zorunlu!");
+
+      const events = JSON.parse(localStorage.getItem("events") || "[]");
+      events.push({ title, date, note });
+      localStorage.setItem("events", JSON.stringify(events));
+      loadEvents();
+    }
+
+    function removeEvent(index) {
+      const events = JSON.parse(localStorage.getItem("events") || "[]");
+      events.splice(index, 1);
+      localStorage.setItem("events", JSON.stringify(events));
+      loadEvents();
+    }
+
+    function checkEvents(events) {
+      const today = new Date().toISOString().split("T")[0];
+      events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const todayDate = new Date(today);
+        const diff = Math.floor((eventDate - todayDate) / (1000 * 60 * 60 * 24));
+        if (diff === 0) {
+          notifyUser(`Bugün: ${event.title}`);
+        } else if (diff === 1) {
+          notifyUser(`Yarın: ${event.title}`);
+        }
+      });
+    }
+
+    function notifyUser(message) {
+      if (Notification.permission === "granted") {
+        new Notification("📌 Hatırlatma", { body: message });
+      }
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
