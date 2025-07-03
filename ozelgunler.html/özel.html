@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ravzanın Takvimi</title>
+  <title>Temalı Takvim</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #121212;
-      color: white;
       padding: 20px;
+      transition: background 0.4s, color 0.4s;
     }
+
     h1 {
       text-align: center;
-      color: #f472b6;
     }
+
     .input-group {
       max-width: 400px;
       margin: 20px auto;
@@ -22,47 +22,46 @@
       flex-direction: column;
       gap: 10px;
     }
-    input, button {
+
+    input, button, select {
       padding: 12px;
       font-size: 16px;
       border-radius: 10px;
       border: none;
     }
-    input {
-      border: 2px solid #f9a8d4;
-      outline: none;
-    }
+
     button {
-      background-color: #ec4899;
-      color: white;
       cursor: pointer;
     }
+
     ul {
       max-width: 500px;
       margin: 20px auto;
       list-style: none;
       padding: 0;
     }
+
     li {
-      background: #1e1e1e;
       margin-bottom: 10px;
       padding: 14px;
-      border-left: 6px solid #f472b6;
+      border-left: 6px solid var(--accent-color);
       border-radius: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: var(--card-bg);
     }
+
     .delete-btn {
-      background: #f43f5e;
-      color: white;
-      border: none;
       padding: 6px 12px;
       border-radius: 8px;
       cursor: pointer;
+      border: none;
+      color: white;
+      background: var(--danger-color);
     }
 
-    /* Bildirim kutusu (TOAST) */
+    /* Toast */
     .toast-container {
       position: fixed;
       top: 20px;
@@ -72,6 +71,7 @@
       gap: 10px;
       z-index: 9999;
     }
+
     .toast {
       display: flex;
       align-items: center;
@@ -80,22 +80,75 @@
       border-radius: 10px;
       min-width: 280px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      color: white;
       font-size: 14px;
       animation: slideIn 0.5s ease forwards;
+      color: white;
     }
-    .toast.success { background-color: #16a34a; }
-    .toast.info { background-color: #2563eb; }
-    .toast.error { background-color: #dc2626; }
+
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(100px); }
       to { opacity: 1; transform: translateX(0); }
+    }
+
+    .toast.success { background-color: var(--success-color); }
+    .toast.info    { background-color: var(--info-color); }
+    .toast.error   { background-color: var(--danger-color); }
+
+    /* THEME STYLES */
+    body.theme-dark {
+      background-color: #121212;
+      color: white;
+      --accent-color: #f472b6;
+      --card-bg: #1e1e1e;
+      --success-color: #16a34a;
+      --info-color: #2563eb;
+      --danger-color: #dc2626;
+    }
+
+    body.theme-light {
+      background-color: #f4f4f4;
+      color: #111;
+      --accent-color: #2563eb;
+      --card-bg: #fff;
+      --success-color: #10b981;
+      --info-color: #2563eb;
+      --danger-color: #ef4444;
+    }
+
+    body.theme-pink {
+      background: linear-gradient(135deg, #fff1f2, #fce7f3);
+      color: #8b2e53;
+      --accent-color: #f472b6;
+      --card-bg: #ffffffdd;
+      --success-color: #d946ef;
+      --info-color: #db2777;
+      --danger-color: #be123c;
+    }
+
+    body.theme-classic {
+      background-color: #ffffff;
+      color: #333;
+      --accent-color: #6366f1;
+      --card-bg: #f3f4f6;
+      --success-color: #22c55e;
+      --info-color: #3b82f6;
+      --danger-color: #ef4444;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎀 Ravzanın Takvimi</h1>
+  <h1>🎨 Temalı Takvim</h1>
+
+  <div style="text-align:center;">
+    <label for="theme-select">Tema Seç:</label>
+    <select id="theme-select" onchange="changeTheme(this.value)">
+      <option value="dark">🌑 Koyu</option>
+      <option value="light">☀️ Açık</option>
+      <option value="pink">🎀 Pembe</option>
+      <option value="classic">🪄 Klasik</option>
+    </select>
+  </div>
 
   <div class="input-group">
     <input type="text" id="event-name" placeholder="Etkinlik adı" />
@@ -136,10 +189,10 @@
       if (Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            showToast("✔️ Bildirim Açıldı", "Artık sistem bildirimleri alacaksın", "success");
-            notifyUser("Test bildirimi başarılı!");
+            showToast("✔️ Bildirim Açıldı", "Sistem bildirimleri açıldı", "success");
+            notifyUser("Test bildirimi aktif");
           } else {
-            showToast("❌ Bildirim Reddedildi", "Tarayıcıdan izin vermen gerekiyor", "error");
+            showToast("❌ Bildirim Reddedildi", "Tarayıcıdan izin vermelisin", "error");
           }
         });
       } else if (Notification.permission === 'granted') {
@@ -149,7 +202,6 @@
 
     function scheduleDailyNotification(eventName) {
       if (Notification.permission !== 'granted') return;
-
       const now = new Date();
       const notifTime = new Date();
       notifTime.setHours(9, 0, 0, 0);
@@ -196,7 +248,7 @@
       const name = document.getElementById('event-name').value.trim();
       const date = document.getElementById('event-date').value;
       if (!name || !date) {
-        showToast("Uyarı", "Lütfen tüm alanları doldurun", "error");
+        showToast("Uyarı", "Lütfen tüm alanları doldur", "error");
         return;
       }
 
@@ -209,9 +261,9 @@
 
       const now = new Date().toISOString().slice(0,10);
       if (date === now) {
-        showToast("Etkinlik Eklendi", `Bugün saat 09:00’da '${name}' için bildirim gelecek.`, "success");
+        showToast("Etkinlik Eklendi", `Bugün saat 09:00’da '${name}' için bildirim gelecek`, "success");
       } else {
-        showToast("Etkinlik Eklendi", `'${name}' etkinliği eklendi.`, "success");
+        showToast("Etkinlik Eklendi", `'${name}' eklendi`, "success");
       }
     }
 
@@ -222,9 +274,17 @@
       loadEvents();
     }
 
+    function changeTheme(theme) {
+      document.body.className = `theme-${theme}`;
+      localStorage.setItem('selectedTheme', theme);
+    }
+
     window.onload = () => {
       requestNotificationPermission();
       loadEvents();
+      const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
+      document.getElementById("theme-select").value = savedTheme;
+      changeTheme(savedTheme);
     };
   </script>
 </body>
