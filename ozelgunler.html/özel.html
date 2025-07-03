@@ -3,139 +3,176 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hatırlatıcı</title>
-  <link rel="manifest" href="manifest.json">
+  <title>special day</title>
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #fff1f2, #fce7f3);
-      margin: 0;
       padding: 20px;
       color: #333;
-      animation: fadeIn 1s ease-out;
     }
-
     h1 {
       text-align: center;
       color: #8b2e53;
-      margin-bottom: 30px;
     }
-
     .input-group {
+      max-width: 400px;
+      margin: 20px auto;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 30px;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      animation: fadeIn 1s ease-out;
+      gap: 10px;
     }
-
     input[type="text"], input[type="date"] {
-      padding: 12px;
+      padding: 10px;
+      border-radius: 10px;
       border: 2px solid #f9a8d4;
-      border-radius: 12px;
       font-size: 16px;
       outline: none;
       transition: border-color 0.3s;
     }
-
-    input:focus {
+    input[type="text"]:focus, input[type="date"]:focus {
       border-color: #ec4899;
     }
-
     button {
-      padding: 12px 16px;
+      padding: 12px;
       border: none;
+      border-radius: 12px;
       background-color: #ec4899;
       color: white;
       font-weight: bold;
-      border-radius: 12px;
       cursor: pointer;
-      transition: background-color 0.3s, transform 0.2s;
+      transition: background-color 0.3s ease;
     }
-
     button:hover {
       background-color: #db2777;
-      transform: scale(1.02);
     }
-
     ul {
-      list-style-type: none;
-      padding: 0;
       max-width: 500px;
-      margin: 0 auto;
+      margin: 20px auto;
+      padding: 0;
+      list-style: none;
     }
-
     li {
       background: #fff0f6;
-      margin: 10px 0;
-      padding: 14px 16px;
+      margin-bottom: 10px;
+      padding: 14px;
       border-left: 6px solid #f472b6;
       border-radius: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      animation: fadeIn 0.5s ease-out;
     }
-
-    .delete {
+    .delete-btn {
       background: #f43f5e;
+      border: none;
+      color: white;
       padding: 6px 12px;
       border-radius: 8px;
-      color: white;
       cursor: pointer;
       font-size: 14px;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s ease;
     }
-
-    .delete:hover {
+    .delete-btn:hover {
       background: #be123c;
     }
   </style>
 </head>
 <body>
-  <h1>Hatırlatıcı</h1>
+
+  <h1>special day</h1>
+
   <div class="input-group">
     <input type="text" id="event-name" placeholder="Etkinlik adı" />
     <input type="date" id="event-date" />
     <button onclick="addEvent()">Ekle</button>
   </div>
+
   <ul id="event-list"></ul>
 
   <script>
     const list = document.getElementById('event-list');
 
+    // Bildirim gösterme fonksiyonu
+    function notifyUser(eventName) {
+      if (Notification.permission === 'granted') {
+        new Notification('Bugünkü etkinlik:', { body: eventName });
+      }
+    }
+
+    // Bildirim izin iste ve anında test bildirimi gönder
+    function requestNotificationPermission() {
+      if (Notification.permission === 'granted') {
+        notifyUser('Bildirim izni zaten verilmiş (test bildirimi).');
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            notifyUser('Bildirim izni yeni verildi (test bildirimi).');
+          } else {
+            alert('Bildirim izni verilmedi.');
+          }
+        });
+      } else {
+        alert('Bildirim izni engellendi. Lütfen tarayıcı ayarlarından izin verin.');
+      }
+    }
+
+    // Gün içinde saat 09:00’da bildirim gönderme fonksiyonu
+    function scheduleDailyNotification(eventName) {
+      if (Notification.permission !== 'granted') return;
+
+      const now = new Date();
+      const notifTime = new Date();
+      notifTime.setHours(9, 0, 0, 0);
+
+      let delay = notifTime.getTime() - now.getTime();
+      if (delay < 0) delay += 24 * 60 * 60 * 1000;
+
+      setTimeout(() => {
+        notifyUser(eventName);
+        setInterval(() => {
+          notifyUser(eventName);
+        }, 24 * 60 * 60 * 1000);
+      }, delay);
+    }
+
+    // Etkinlikleri yükle ve listele, bildirimleri planla
     function loadEvents() {
       list.innerHTML = '';
       const events = JSON.parse(localStorage.getItem('events') || '[]');
       const today = new Date().toISOString().slice(0, 10);
+      const todayDate = new Date(today);
 
       events.forEach((event, index) => {
         const li = document.createElement('li');
         li.innerHTML = `
           <span>${event.name} - ${event.date}</span>
-          <span class="delete" onclick="deleteEvent(${index})">Sil</span>
+          <button class="delete-btn" onclick="deleteEvent(${index})">Sil</button>
         `;
         list.appendChild(li);
 
+        // Eğer etkinlik tarihi bugünse bildirim planla
         if (event.date === today) {
-          notifyUser(event.name);
+          scheduleDailyNotification(event.name);
+        }
+
+        // Bir gün öncesi hatırlatma (opsiyonel)
+        const eventDate = new Date(event.date);
+        const oneDayBefore = new Date(eventDate);
+        oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+        if (todayDate.toISOString().slice(0, 10) === oneDayBefore.toISOString().slice(0, 10)) {
+          scheduleDailyNotification(event.name + " (Yarın)");
         }
       });
     }
 
+    // Yeni etkinlik ekle
     function addEvent() {
-      const name = document.getElementById('event-name').value;
+      const name = document.getElementById('event-name').value.trim();
       const date = document.getElementById('event-date').value;
-      if (!name || !date) return alert('Lütfen tüm alanları doldurun');
-
+      if (!name || !date) {
+        alert('Lütfen tüm alanları doldurun!');
+        return;
+      }
       const events = JSON.parse(localStorage.getItem('events') || '[]');
       events.push({ name, date });
       localStorage.setItem('events', JSON.stringify(events));
@@ -144,6 +181,7 @@
       loadEvents();
     }
 
+    // Etkinlik sil
     function deleteEvent(index) {
       const events = JSON.parse(localStorage.getItem('events') || '[]');
       events.splice(index, 1);
@@ -151,19 +189,10 @@
       loadEvents();
     }
 
-    function notifyUser(eventName) {
-      if (Notification.permission === 'granted') {
-        new Notification('Bugünkü etkinlik:', { body: eventName });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            new Notification('Bugünkü etkinlik:', { body: eventName });
-          }
-        });
-      }
-    }
-
-    window.onload = loadEvents;
+    window.onload = () => {
+      requestNotificationPermission();
+      loadEvents();
+    };
   </script>
 </body>
 </html>
