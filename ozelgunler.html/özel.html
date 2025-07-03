@@ -1,87 +1,169 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Özel Gün Takipçisi</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hatırlatıcı</title>
+  <link rel="manifest" href="manifest.json">
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-    h1 { text-align: center; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
-    input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; }
-    ul { list-style-type: none; padding: 0; }
-    li { margin: 10px 0; background: #eee; padding: 10px; border-radius: 6px; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #fff1f2, #fce7f3);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      animation: fadeIn 1s ease-out;
+    }
+
+    h1 {
+      text-align: center;
+      color: #8b2e53;
+      margin-bottom: 30px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 30px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: fadeIn 1s ease-out;
+    }
+
+    input[type="text"], input[type="date"] {
+      padding: 12px;
+      border: 2px solid #f9a8d4;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #ec4899;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: none;
+      background-color: #ec4899;
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #db2777;
+      transform: scale(1.02);
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    li {
+      background: #fff0f6;
+      margin: 10px 0;
+      padding: 14px 16px;
+      border-left: 6px solid #f472b6;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .delete {
+      background: #f43f5e;
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .delete:hover {
+      background: #be123c;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎉 Özel Gün Takipçisi</h1>
-    <input type="text" id="title" placeholder="Başlık (örn: Doğum Günü)">
-    <input type="date" id="date">
-    <textarea id="note" placeholder="Açıklama (isteğe bağlı)"></textarea>
-    <button onclick="addEvent()">➕ Ekle</button>
-    <ul id="eventList"></ul>
+  <h1>Hatırlatıcı</h1>
+  <div class="input-group">
+    <input type="text" id="event-name" placeholder="Etkinlik adı" />
+    <input type="date" id="event-date" />
+    <button onclick="addEvent()">Ekle</button>
   </div>
+  <ul id="event-list"></ul>
 
   <script>
-    const list = document.getElementById("eventList");
-
-    // Bildirim izni iste
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
+    const list = document.getElementById('event-list');
 
     function loadEvents() {
-      const events = JSON.parse(localStorage.getItem("events") || "[]");
-      list.innerHTML = "";
-      events.forEach((event, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${event.title}</strong> - ${event.date}<br>${event.note}
-          <button onclick="removeEvent(${i})">🗑 Sil</button>`;
+      list.innerHTML = '';
+      const events = JSON.parse(localStorage.getItem('events') || '[]');
+      const today = new Date().toISOString().slice(0, 10);
+
+      events.forEach((event, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${event.name} - ${event.date}</span>
+          <span class="delete" onclick="deleteEvent(${index})">Sil</span>
+        `;
         list.appendChild(li);
-      });
-      checkEvents(events);
-    }
 
-    function addEvent() {
-      const title = document.getElementById("title").value;
-      const date = document.getElementById("date").value;
-      const note = document.getElementById("note").value;
-      if (!title || !date) return alert("Başlık ve tarih zorunlu!");
-
-      const events = JSON.parse(localStorage.getItem("events") || "[]");
-      events.push({ title, date, note });
-      localStorage.setItem("events", JSON.stringify(events));
-      loadEvents();
-    }
-
-    function removeEvent(index) {
-      const events = JSON.parse(localStorage.getItem("events") || "[]");
-      events.splice(index, 1);
-      localStorage.setItem("events", JSON.stringify(events));
-      loadEvents();
-    }
-
-    function checkEvents(events) {
-      const today = new Date().toISOString().split("T")[0];
-      events.forEach(event => {
-        const eventDate = new Date(event.date);
-        const todayDate = new Date(today);
-        const diff = Math.floor((eventDate - todayDate) / (1000 * 60 * 60 * 24));
-        if (diff === 0) {
-          notifyUser(`Bugün: ${event.title}`);
-        } else if (diff === 1) {
-          notifyUser(`Yarın: ${event.title}`);
+        if (event.date === today) {
+          notifyUser(event.name);
         }
       });
     }
 
-    function notifyUser(message) {
-      if (Notification.permission === "granted") {
-        new Notification("📌 Hatırlatma", { body: message });
+    function addEvent() {
+      const name = document.getElementById('event-name').value;
+      const date = document.getElementById('event-date').value;
+      if (!name || !date) return alert('Lütfen tüm alanları doldurun');
+
+      const events = JSON.parse(localStorage.getItem('events') || '[]');
+      events.push({ name, date });
+      localStorage.setItem('events', JSON.stringify(events));
+      document.getElementById('event-name').value = '';
+      document.getElementById('event-date').value = '';
+      loadEvents();
+    }
+
+    function deleteEvent(index) {
+      const events = JSON.parse(localStorage.getItem('events') || '[]');
+      events.splice(index, 1);
+      localStorage.setItem('events', JSON.stringify(events));
+      loadEvents();
+    }
+
+    function notifyUser(eventName) {
+      if (Notification.permission === 'granted') {
+        new Notification('Bugünkü etkinlik:', { body: eventName });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Bugünkü etkinlik:', { body: eventName });
+          }
+        });
       }
     }
 
-    loadEvents();
+    window.onload = loadEvents;
   </script>
 </body>
 </html>
