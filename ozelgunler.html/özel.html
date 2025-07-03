@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>special day</title>
+  <title>Ravzanın Takvimi</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #fff1f2, #fce7f3);
+      background: #121212;
+      color: white;
       padding: 20px;
-      color: #333;
     }
     h1 {
       text-align: center;
-      color: #8b2e53;
+      color: #f472b6;
     }
     .input-group {
       max-width: 400px;
@@ -22,38 +22,29 @@
       flex-direction: column;
       gap: 10px;
     }
-    input[type="text"], input[type="date"] {
-      padding: 10px;
-      border-radius: 10px;
-      border: 2px solid #f9a8d4;
+    input, button {
+      padding: 12px;
       font-size: 16px;
-      outline: none;
-      transition: border-color 0.3s;
+      border-radius: 10px;
+      border: none;
     }
-    input[type="text"]:focus, input[type="date"]:focus {
-      border-color: #ec4899;
+    input {
+      border: 2px solid #f9a8d4;
+      outline: none;
     }
     button {
-      padding: 12px;
-      border: none;
-      border-radius: 12px;
       background-color: #ec4899;
       color: white;
-      font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #db2777;
     }
     ul {
       max-width: 500px;
       margin: 20px auto;
-      padding: 0;
       list-style: none;
+      padding: 0;
     }
     li {
-      background: #fff0f6;
+      background: #1e1e1e;
       margin-bottom: 10px;
       padding: 14px;
       border-left: 6px solid #f472b6;
@@ -64,22 +55,47 @@
     }
     .delete-btn {
       background: #f43f5e;
-      border: none;
       color: white;
+      border: none;
       padding: 6px 12px;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
     }
-    .delete-btn:hover {
-      background: #be123c;
+
+    /* Bildirim kutusu (TOAST) */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-radius: 10px;
+      min-width: 280px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      color: white;
+      font-size: 14px;
+      animation: slideIn 0.5s ease forwards;
+    }
+    .toast.success { background-color: #16a34a; }
+    .toast.info { background-color: #2563eb; }
+    .toast.error { background-color: #dc2626; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
     }
   </style>
 </head>
 <body>
 
-  <h1>special day</h1>
+  <h1>🎀 Ravzanın Takvimi</h1>
 
   <div class="input-group">
     <input type="text" id="event-name" placeholder="Etkinlik adı" />
@@ -88,35 +104,49 @@
   </div>
 
   <ul id="event-list"></ul>
+  <div class="toast-container" id="toast-container"></div>
 
   <script>
     const list = document.getElementById('event-list');
+    const toastContainer = document.getElementById('toast-container');
 
-    // Bildirim gösterme fonksiyonu
+    function showToast(title, message, type = "info") {
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div>
+          <strong>${title}</strong><br/>
+          ${message}
+        </div>
+        <span style="cursor:pointer;margin-left:10px;" onclick="this.parentElement.remove()">✖</span>
+      `;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
+    }
+
     function notifyUser(eventName) {
       if (Notification.permission === 'granted') {
-        new Notification('Bugünkü etkinlik:', { body: eventName });
+        new Notification('Etkinlik Bildirimi', { body: eventName });
+      } else {
+        showToast("🔔 Etkinlik Bildirimi", eventName, "info");
       }
     }
 
-    // Bildirim izin iste ve anında test bildirimi gönder
     function requestNotificationPermission() {
-      if (Notification.permission === 'granted') {
-        notifyUser('Bildirim izni zaten verilmiş (test bildirimi).');
-      } else if (Notification.permission !== 'denied') {
+      if (Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            notifyUser('Bildirim izni yeni verildi (test bildirimi).');
+            showToast("✔️ Bildirim Açıldı", "Artık sistem bildirimleri alacaksın", "success");
+            notifyUser("Test bildirimi başarılı!");
           } else {
-            alert('Bildirim izni verilmedi.');
+            showToast("❌ Bildirim Reddedildi", "Tarayıcıdan izin vermen gerekiyor", "error");
           }
         });
-      } else {
-        alert('Bildirim izni engellendi. Lütfen tarayıcı ayarlarından izin verin.');
+      } else if (Notification.permission === 'granted') {
+        notifyUser("Test bildirimi aktif!");
       }
     }
 
-    // Gün içinde saat 09:00’da bildirim gönderme fonksiyonu
     function scheduleDailyNotification(eventName) {
       if (Notification.permission !== 'granted') return;
 
@@ -124,7 +154,7 @@
       const notifTime = new Date();
       notifTime.setHours(9, 0, 0, 0);
 
-      let delay = notifTime.getTime() - now.getTime();
+      let delay = notifTime - now;
       if (delay < 0) delay += 24 * 60 * 60 * 1000;
 
       setTimeout(() => {
@@ -135,7 +165,6 @@
       }, delay);
     }
 
-    // Etkinlikleri yükle ve listele, bildirimleri planla
     function loadEvents() {
       list.innerHTML = '';
       const events = JSON.parse(localStorage.getItem('events') || '[]');
@@ -150,12 +179,10 @@
         `;
         list.appendChild(li);
 
-        // Eğer etkinlik tarihi bugünse bildirim planla
         if (event.date === today) {
           scheduleDailyNotification(event.name);
         }
 
-        // Bir gün öncesi hatırlatma (opsiyonel)
         const eventDate = new Date(event.date);
         const oneDayBefore = new Date(eventDate);
         oneDayBefore.setDate(oneDayBefore.getDate() - 1);
@@ -165,23 +192,29 @@
       });
     }
 
-    // Yeni etkinlik ekle
     function addEvent() {
       const name = document.getElementById('event-name').value.trim();
       const date = document.getElementById('event-date').value;
       if (!name || !date) {
-        alert('Lütfen tüm alanları doldurun!');
+        showToast("Uyarı", "Lütfen tüm alanları doldurun", "error");
         return;
       }
+
       const events = JSON.parse(localStorage.getItem('events') || '[]');
       events.push({ name, date });
       localStorage.setItem('events', JSON.stringify(events));
       document.getElementById('event-name').value = '';
       document.getElementById('event-date').value = '';
       loadEvents();
+
+      const now = new Date().toISOString().slice(0,10);
+      if (date === now) {
+        showToast("Etkinlik Eklendi", `Bugün saat 09:00’da '${name}' için bildirim gelecek.`, "success");
+      } else {
+        showToast("Etkinlik Eklendi", `'${name}' etkinliği eklendi.`, "success");
+      }
     }
 
-    // Etkinlik sil
     function deleteEvent(index) {
       const events = JSON.parse(localStorage.getItem('events') || '[]');
       events.splice(index, 1);
